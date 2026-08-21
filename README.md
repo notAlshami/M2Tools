@@ -28,3 +28,26 @@ m2delete my-app                  # deletes .../my-app/1.0-SNAPSHOT*
 m2delete my-app 2.3              # deletes .../my-app/2.3*
 m2delete my-app 1.0-SNAPSHOT -n  # dry run, just prints what would be deleted
 ```
+
+## Shell completion (zsh)
+
+Tab-completion for `<app-name>` and `[version]` is powered by
+[`argcomplete`](https://github.com/kislyuk/argcomplete), searching your local
+Maven repository live — so it always reflects what's actually installed.
+
+One-time setup:
+
+```sh
+pipx install argcomplete   # or: pip install --user argcomplete
+```
+
+Then add to `~/.zshrc`:
+
+```sh
+autoload -U bashcompinit && bashcompinit
+eval "$(register-python-argcomplete m2delete)"
+```
+
+Reload your shell (or `source ~/.zshrc`), then `m2delete <TAB>` lists artifact
+names found in the repo, and `m2delete my-app <TAB>` lists that artifact's
+available versions.
