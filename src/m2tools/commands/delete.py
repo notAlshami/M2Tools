@@ -3,24 +3,29 @@ from pathlib import Path
 
 import typer
 
+from m2tools.core.index import load_index
 from m2tools.core.repo import (
     DEFAULT_VERSION,
     default_repo,
     find_artifact_dirs,
-    list_app_names,
-    list_version_names,
     matching_version_dirs,
 )
 
 
 def complete_app(ctx: typer.Context, incomplete: str):
-    repo = Path(ctx.params.get("repo") or default_repo())
-    return list_app_names(repo, incomplete)
+    return [name for name in load_index()["artifacts"] if name.startswith(incomplete)]
 
 
 def complete_version(ctx: typer.Context, incomplete: str):
-    repo = Path(ctx.params.get("repo") or default_repo())
-    return list_version_names(repo, ctx.params.get("app_name"), incomplete)
+    versions = load_index()["versions"].get(ctx.params.get("app_name"), [])
+    matches = [v for v in versions if v.startswith(incomplete)]
+    if not matches and DEFAULT_VERSION.startswith(incomplete):
+        # Typer/Click fall back to full filesystem completion when a
+        # completer returns nothing, which is a confusing result for an
+        # app with no locally-built versions. Suggesting the tool's own
+        # default is harmless -- `delete` still validates it for real.
+        return [DEFAULT_VERSION]
+    return matches
 
 
 def delete(

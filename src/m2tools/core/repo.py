@@ -16,22 +16,22 @@ def matching_version_dirs(app_dir: Path, version: str):
     return sorted(p for p in app_dir.glob(f"{version}*") if p.is_dir())
 
 
-def list_app_names(repo: Path, prefix: str = ""):
+def scan_versions_by_artifact(repo: Path):
+    """Walk `repo` once, mapping each artifactId dir name to its version names.
+
+    `find_artifact_dirs`/`list_version_names` re-walk the whole repo on
+    every call (used by `delete` itself, where that's a one-off, correctness
+    -critical live lookup). This does it once so the result can be cached
+    for fast, repeated completion lookups instead.
+    """
+    versions_by_artifact = {}
     if not repo.is_dir():
-        return []
-    names = set()
-    for d in repo.rglob(f"{prefix}*"):
-        if d.is_dir() and any(c.is_dir() for c in d.iterdir()):
-            names.add(d.name)
-    return sorted(names)
-
-
-def list_version_names(repo: Path, app: str, prefix: str = ""):
-    if not app or not repo.is_dir():
-        return []
-    names = set()
-    for app_dir in find_artifact_dirs(repo, app):
-        for v in app_dir.glob(f"{prefix}*"):
-            if v.is_dir():
-                names.add(v.name)
-    return sorted(names)
+        return versions_by_artifact
+    for dirpath, dirnames, filenames in os.walk(repo):
+        if any(name.endswith(".pom") for name in filenames):
+            version_name = os.path.basename(dirpath)
+            parent_name = os.path.basename(os.path.dirname(dirpath))
+            versions_by_artifact.setdefault(parent_name, []).append(version_name)
+    for versions in versions_by_artifact.values():
+        versions.sort()
+    return versions_by_artifact

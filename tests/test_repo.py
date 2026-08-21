@@ -1,8 +1,7 @@
 from m2tools.core.repo import (
     find_artifact_dirs,
-    list_app_names,
-    list_version_names,
     matching_version_dirs,
+    scan_versions_by_artifact,
 )
 
 
@@ -10,7 +9,9 @@ def _make_repo(tmp_path):
     app_dir = tmp_path / "com" / "example" / "my-app"
     (app_dir / "1.0-SNAPSHOT").mkdir(parents=True)
     (app_dir / "2.3.0").mkdir(parents=True)
-    (app_dir / "1.0-SNAPSHOT" / "marker.jar").touch()
+    (app_dir / "1.0-SNAPSHOT" / "my-app-1.0-SNAPSHOT.pom").touch()
+    (app_dir / "1.0-SNAPSHOT" / "my-app-1.0-SNAPSHOT.jar").touch()
+    (app_dir / "2.3.0" / "my-app-2.3.0.pom").touch()
     return tmp_path
 
 
@@ -27,11 +28,17 @@ def test_matching_version_dirs(tmp_path):
     assert [v.name for v in versions] == ["1.0-SNAPSHOT"]
 
 
-def test_list_app_names(tmp_path):
+def test_scan_versions_by_artifact(tmp_path):
     repo = _make_repo(tmp_path)
-    assert "my-app" in list_app_names(repo, "my")
+    assert scan_versions_by_artifact(repo) == {"my-app": ["1.0-SNAPSHOT", "2.3.0"]}
 
 
-def test_list_version_names(tmp_path):
+def test_scan_versions_by_artifact_ignores_dirs_without_pom(tmp_path):
     repo = _make_repo(tmp_path)
-    assert list_version_names(repo, "my-app", "2") == ["2.3.0"]
+    decoy = repo / "com" / "example" / "my-app-docs" / "not-a-version"
+    decoy.mkdir(parents=True)
+    (decoy / "README.txt").touch()
+
+    versions = scan_versions_by_artifact(repo)
+    assert "my-app-docs" not in versions
+    assert "not-a-version" not in versions

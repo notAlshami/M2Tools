@@ -1,6 +1,6 @@
 [project]
 name = "m2tools"
-version = "0.2.0"
+version = "0.3.0"
 description = "CLI tools for managing a local Maven repository"
 requires-python = ">=3.8"
 dependencies = ["typer>=0.12"]
