@@ -8,7 +8,7 @@ from m2tools.core.repo import (
     DEFAULT_VERSION,
     default_repo,
     find_artifact_dirs,
-    matching_version_dirs,
+    find_version_dirs,
 )
 
 
@@ -65,14 +65,13 @@ def delete(
         raise typer.Exit(1)
 
     deleted_any = False
-    for app_dir in app_dirs:
-        for version_dir in matching_version_dirs(app_dir, version):
-            deleted_any = True
-            if dry_run:
-                typer.echo(f"Would delete: {version_dir}")
-            else:
-                typer.echo(f"Deleting: {version_dir}")
-                shutil.rmtree(version_dir)
+    for version_dir in find_version_dirs(repo, app_name, version):
+        deleted_any = True
+        if dry_run:
+            typer.echo(f"Would delete: {version_dir}")
+        else:
+            typer.echo(f"Deleting: {version_dir}")
+            shutil.rmtree(version_dir)
 
     if not deleted_any:
         typer.secho(

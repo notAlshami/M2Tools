@@ -32,6 +32,26 @@ def test_delete_removes_matching_version_only(tmp_path):
     assert (repo / "com" / "example" / "my-app" / "2.3.0").exists()
 
 
+def test_delete_parent_pom_also_removes_installed_submodules(tmp_path):
+    repo = tmp_path
+    parent_dir = repo / "com" / "example" / "myapp-parent" / "1.0-SNAPSHOT"
+    parent_dir.mkdir(parents=True)
+    (parent_dir / "myapp-parent-1.0-SNAPSHOT.pom").write_text(
+        '<project xmlns="http://maven.apache.org/POM/4.0.0">'
+        "<modules><module>myapp-core</module></modules>"
+        "</project>"
+    )
+    core_dir = repo / "com" / "example" / "myapp-core" / "1.0-SNAPSHOT"
+    core_dir.mkdir(parents=True)
+    (core_dir / "myapp-core-1.0-SNAPSHOT.jar").touch()
+
+    result = runner.invoke(app, ["delete", "myapp-parent", "--repo", str(repo)])
+
+    assert result.exit_code == 0
+    assert not parent_dir.exists()
+    assert not core_dir.exists()
+
+
 def test_delete_unknown_app_errors(tmp_path):
     repo = _make_repo(tmp_path)
     result = runner.invoke(app, ["delete", "unknown-app", "--repo", str(repo)])
